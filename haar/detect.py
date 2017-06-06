@@ -1,6 +1,16 @@
 import numpy as np
 import cv2
+import time
+import argparse
+from imutils import paths
 
+# construct the argument parse and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--images", required=False, help="path to images directory")
+ap.add_argument("-v", "--video", required=False, help="capture video feed")
+args = vars(ap.parse_args())
+
+# initialize classifiers
 fb_cascade = cv2.CascadeClassifier('haarcascade_fullbody.xml')
 ub_cascade = cv2.CascadeClassifier('haarcascade_upperbody.xml')
 lb_cascade = cv2.CascadeClassifier('haarcascade_lowerbody.xml')
@@ -11,35 +21,23 @@ if args["images"]:
 		# load the image and resize it to (1) reduce detection time
 		# and (2) improve detection accuracy
 		image = cv2.imread(imagePath)
-		image = imutils.resize(image, width=min(400, image.shape[1]))
+		#image = imutils.resize(image, width=min(400, image.shape[1]))
 		orig = image.copy()
 	 
 		# detect people in the image
-		(rects, weights) = hog.detectMultiScale(image, winStride=(4, 4),
-			padding=(8, 8), scale=1.05)
+		fbs = fb_cascade.detectMultiScale(image, 1.02, 5)
 	 
 		# draw the original bounding boxes
-		for (x, y, w, h) in rects:
+		for (x, y, w, h) in fbs:
 			cv2.rectangle(orig, (x, y), (x + w, y + h), (0, 0, 255), 2)
-	 
-		# apply non-maxima suppression to the bounding boxes using a
-		# fairly large overlap threshold to try to maintain overlapping
-		# boxes that are still people
-		rects = np.array([[x, y, x + w, y + h] for (x, y, w, h) in rects])
-		pick = non_max_suppression(rects, probs=None, overlapThresh=0.65)
-	 
-		# draw the final bounding boxes
-		for (xA, yA, xB, yB) in pick:
-			cv2.rectangle(image, (xA, yA), (xB, yB), (0, 255, 0), 2)
 	 
 		# show some information on the number of bounding boxes
 		filename = imagePath[imagePath.rfind("/") + 1:]
-		print("[INFO] {}: {} original boxes, {} after suppression".format(
-			filename, len(rects), len(pick)))
+		print("[INFO] {}: {} original boxes".format(
+			filename, len(fbs)))
 	 
 		# show the output images
 		cv2.imshow("Before NMS", orig)
-		cv2.imshow("After NMS", image)
 		cv2.waitKey(0)
 
 else:
@@ -52,20 +50,34 @@ else:
 		cv2.namedWindow('Live');
 		cap.set(cv2.CAP_PROP_FRAME_WIDTH,320)
 		cap.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
+		oldclock = time.clock()
 		while( cap.isOpened() ):
+			# timing mechanism for fps measurement
+			newclock = time.clock()
+			elapsed = newclock - oldclock
+			fps = 1 / elapsed
+			print "{0:0.2f}".format(fps)
+			oldclock = time.clock()
+			
 			ret,frame = cap.read()
 			if ret==False:
 				print('Unable to grab from the camera')
 				break
 	 
 	 		#image = cv2.imread(imagePath)
-			frame = imutils.resize(frame, width=min(400, frame.shape[1]))
+			#frame = imutils.resize(frame, width=min(400, frame.shape[1]))
 		 
-			fbs = fb_cascade.detectMultiScale(frame, 1.3, 5)
+			fbs = fb_cascade.detectMultiScale(frame, 1.02, 5)
 			for (x,y,w,h) in fbs:
-				cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
+				cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
 			
-			ubs = fb_cascade.detectMultiScale(frame, 1.3, 5)
+			ubs = ub_cascade.detectMultiScale(frame, 1.02, 5)
+			for (x,y,w,h) in ubs:
+				cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+				
+			lbs = lb_cascade.detectMultiScale(frame, 1.02, 5)
+			for (x,y,w,h) in lbs:
+				cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
 	 
 			cv2.imshow('Live',frame)
 			#cv2.waitKey(0);
@@ -80,17 +92,17 @@ else:
 	print('bye bye!')
 	quit()
 
-img = cv2.imread('sachin.jpg')
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+#img = cv2.imread('sachin.jpg')
+#gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-for (x,y,w,h) in faces:
-    cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-    roi_gray = gray[y:y+h, x:x+w]
-    roi_color = img[y:y+h, x:x+w]
-    eyes = eye_cascade.detectMultiScale(roi_gray)
-    for (ex,ey,ew,eh) in eyes:
-        cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
-cv2.imshow('img',img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+#for (x,y,w,h) in faces:
+#    cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
+#    roi_gray = gray[y:y+h, x:x+w]
+#    roi_color = img[y:y+h, x:x+w]
+#    eyes = eye_cascade.detectMultiScale(roi_gray)
+#    for (ex,ey,ew,eh) in eyes:
+#        cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
+#cv2.imshow('img',img)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()

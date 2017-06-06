@@ -6,6 +6,7 @@ import numpy as np
 import argparse
 import imutils
 import cv2
+import time
  
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -64,18 +65,25 @@ else:
 		cv2.namedWindow('Live');
 		cap.set(cv2.CAP_PROP_FRAME_WIDTH,320)
 		cap.set(cv2.CAP_PROP_FRAME_HEIGHT,240)
+		oldclock = time.clock()
 		while( cap.isOpened() ):
+			# timing mechanism for fps measurement
+			newclock = time.clock()
+			elapsed = newclock - oldclock
+			fps = 1 / elapsed
+			print("{0:0.2f}".format(fps))
+			oldclock = time.clock()
+			
 			ret,frame = cap.read()
 			if ret==False:
 				print('Unable to grab from the camera')
 				break
 	 
-	 		#image = cv2.imread(imagePath)
 			frame = imutils.resize(frame, width=min(400, frame.shape[1]))
 		 
 			# detect people in the image
 			(rects, weights) = hog.detectMultiScale(frame, winStride=(4, 4),
-				padding=(8, 8), scale=1.05)
+				padding=(8, 8), scale=1.02)
 		 
 			# apply non-maxima suppression to the bounding boxes using a
 			# fairly large overlap threshold to try to maintain overlapping
