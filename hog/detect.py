@@ -24,7 +24,7 @@ if args["images"]:
 		# load the image and resize it to (1) reduce detection time
 		# and (2) improve detection accuracy
 		image = cv2.imread(imagePath)
-		image = imutils.resize(image, width=min(400, image.shape[1]))
+		#image = imutils.resize(image, width=min(400, image.shape[1]))
 		orig = image.copy()
 	 
 		# detect people in the image

@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import time
 import argparse
+import imutils
 from imutils import paths
 
 # construct the argument parse and parse the arguments
@@ -12,8 +13,6 @@ args = vars(ap.parse_args())
 
 # initialize classifiers
 fb_cascade = cv2.CascadeClassifier('haarcascade_fullbody.xml')
-ub_cascade = cv2.CascadeClassifier('haarcascade_upperbody.xml')
-lb_cascade = cv2.CascadeClassifier('haarcascade_lowerbody.xml')
 
 #  if --images <path> loop over the image paths
 if args["images"]:
@@ -21,15 +20,15 @@ if args["images"]:
 		# load the image and resize it to (1) reduce detection time
 		# and (2) improve detection accuracy
 		image = cv2.imread(imagePath)
-		#image = imutils.resize(image, width=min(400, image.shape[1]))
-		orig = image.copy()
+		image = imutils.resize(image, width=min(400, image.shape[1]))
+		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	 
 		# detect people in the image
-		fbs = fb_cascade.detectMultiScale(image, 1.02, 5)
+		fbs = fb_cascade.detectMultiScale(gray, 1.1, 5)
 	 
 		# draw the original bounding boxes
 		for (x, y, w, h) in fbs:
-			cv2.rectangle(orig, (x, y), (x + w, y + h), (0, 0, 255), 2)
+			cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
 	 
 		# show some information on the number of bounding boxes
 		filename = imagePath[imagePath.rfind("/") + 1:]
@@ -37,7 +36,7 @@ if args["images"]:
 			filename, len(fbs)))
 	 
 		# show the output images
-		cv2.imshow("Before NMS", orig)
+		cv2.imshow("Before NMS", image)
 		cv2.waitKey(0)
 
 else:
@@ -67,18 +66,12 @@ else:
 	 		#image = cv2.imread(imagePath)
 			#frame = imutils.resize(frame, width=min(400, frame.shape[1]))
 		 
-			fbs = fb_cascade.detectMultiScale(frame, 1.02, 5)
+			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		 
+			fbs = fb_cascade.detectMultiScale(gray, 1.01, 5)
 			for (x,y,w,h) in fbs:
 				cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
 			
-			ubs = ub_cascade.detectMultiScale(frame, 1.02, 5)
-			for (x,y,w,h) in ubs:
-				cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
-				
-			lbs = lb_cascade.detectMultiScale(frame, 1.02, 5)
-			for (x,y,w,h) in lbs:
-				cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
-	 
 			cv2.imshow('Live',frame)
 			#cv2.waitKey(0);
 			key = cv2.waitKey(5)
